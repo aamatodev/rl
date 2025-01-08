@@ -572,19 +572,19 @@ class VmasWrapper(_EnvWrapper):
             action_list += group_action_list
         action = [action_list[agent_indices[i]] for i in range(self.n_agents)]
 
-        current_emb = tensordict["agents"]["current_embedding"][:, 1, :]
-        pos_emb = tensordict["agents"]["positive_embedding"][:, 1, :]
+        similarity = tensordict["agents"]["similarity"]
+        # pos_emb = tensordict["agents"]["positive_embedding"][:, 1, :]
 
         # Normalize the tensors along the last dimension
-        tensor1_norm = F.normalize(current_emb, dim=0)  # Shape [60, 4, 32]
-        tensor2_norm = F.normalize(pos_emb, dim=0)  # Shape [60, 4, 32]
+        # tensor1_norm = F.normalize(current_emb, dim=0)  # Shape [60, 4, 32]
+        # tensor2_norm = F.normalize(pos_emb, dim=0)  # Shape [60, 4, 32]
 
         # Compute cosine similarity: [60, 4, 32] x [60, 4, 32] -> [60, 4, 32, 32]
-        cosine_similarity = torch.matmul(tensor1_norm, tensor2_norm.T)
+        # cosine_similarity = torch.matmul(tensor1_norm, tensor2_norm.T)
 
         # Get the maximum cosine similarity along the last dimension
-        max_cosine_similarity, _ = cosine_similarity.max(dim=1)  # Shape [60, 4, 1]
-        max_cosine_similarity = max_cosine_similarity.unsqueeze(1).unsqueeze(1).repeat(1, 4, 1)
+        # max_cosine_similarity, _ = cosine_similarity.max(dim=1)  # Shape [60, 4, 1]
+        # max_cosine_similarity = max_cosine_similarity.unsqueeze(1).unsqueeze(1).repeat(1, 4, 1)
 
 
         obs, rews, dones, infos = self._env.step(action)
@@ -598,7 +598,7 @@ class VmasWrapper(_EnvWrapper):
                 i = self.agent_names_to_indices_map[agent_name]
 
                 agent_obs = self.read_obs(obs[i])
-                agent_rew = self.read_reward(rews[i]) + max_cosine_similarity[:, i, :]
+                agent_rew = self.read_reward(rews[i]) + similarity[:, i, :]
                 agent_info = self.read_info(infos[i])
 
                 agent_td = TensorDict(
