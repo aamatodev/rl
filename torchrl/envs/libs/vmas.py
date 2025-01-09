@@ -42,7 +42,6 @@ _has_vmas = importlib.util.find_spec("vmas") is not None
 
 __all__ = ["VmasWrapper", "VmasEnv"]
 
-
 def _get_envs():
     if not _has_vmas:
         raise ImportError("VMAS is not installed in your virtual environment.")
@@ -572,7 +571,11 @@ class VmasWrapper(_EnvWrapper):
             action_list += group_action_list
         action = [action_list[agent_indices[i]] for i in range(self.n_agents)]
 
-        similarity = tensordict["agents"]["similarity"]
+        # similarity = tensordict["agents"]["similarity"]
+        # h1 = tensordict["agents"]["current_enc"]
+        # h2 = tensordict["agents"]["target_enc"]
+
+        crew = tensordict["agents"]["c_rew"]
         # pos_emb = tensordict["agents"]["positive_embedding"][:, 1, :]
 
         # Normalize the tensors along the last dimension
@@ -586,7 +589,6 @@ class VmasWrapper(_EnvWrapper):
         # max_cosine_similarity, _ = cosine_similarity.max(dim=1)  # Shape [60, 4, 1]
         # max_cosine_similarity = max_cosine_similarity.unsqueeze(1).unsqueeze(1).repeat(1, 4, 1)
 
-
         obs, rews, dones, infos = self._env.step(action)
 
         dones = self.read_done(dones)
@@ -598,13 +600,14 @@ class VmasWrapper(_EnvWrapper):
                 i = self.agent_names_to_indices_map[agent_name]
 
                 agent_obs = self.read_obs(obs[i])
-                agent_rew = self.read_reward(rews[i]) + similarity[:, i, :]
+                agent_rew = self.read_reward(rews[i]) + crew[:, i, :]
                 agent_info = self.read_info(infos[i])
 
                 agent_td = TensorDict(
                     source={
                         "observation": agent_obs,
                         "reward": agent_rew,
+                        "c_reward": crew[:, i, :],
                     },
                     batch_size=self.batch_size,
                     device=self.device,
