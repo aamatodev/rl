@@ -88,6 +88,27 @@ DEFAULT_EXPLORATION_TYPE: ExplorationType = ExplorationType.RANDOM
 _is_osx = sys.platform.startswith("darwin")
 
 
+
+def intrinsic_reward(embedding_a, embedding_b, target_embedding):
+    """
+    Calculate the reward based on contrastive loss-inspired function.
+
+    Args:
+        embedding_a (np.ndarray): The current embedding (agent's current state).
+        embedding_b (np.ndarray): The prev embedding.
+        target_embedding (np.ndarray): The target embedding.
+
+    Returns:
+        float: The reward value.
+    """
+    current_dist = torch.cdist(embedding_a, target_embedding, p=2)[:, 1, 1].unsqueeze(1).unsqueeze(2).repeat(1, 4, 1)
+    next_dist = torch.cdist(embedding_b, target_embedding, p=2)[:, 1, 1].unsqueeze(1).unsqueeze(2).repeat(1, 4, 1)
+
+    # Calculate the reward using the margin-based function
+    reward = current_dist - next_dist
+
+    return reward
+
 class _Interruptor:
     """A class for managing the collection state of a process.
 
@@ -1185,6 +1206,17 @@ class SyncDataCollector(DataCollectorBase):
                 else:
                     env_input = self._shuttle
                 env_output, env_next_output = self.env.step_and_maybe_reset(env_input)
+
+                # compute intrinsic reward from s_t to s_t+1
+                next_policy_output = self.policy.module[0](env_output["next"])
+
+                i_reward = intrinsic_reward(env_output["agents"]["current_merged_rep_encoding"],
+                                                    next_policy_output["agents"]["current_merged_rep_encoding"],
+                                                    env_output["agents"]["objective_merged_rep_encoding"])
+
+                env_output["next"]["agents"]["episode_reward"] += 100 * i_reward
+                env_next_output["agents"]["episode_reward"] += 100 * i_reward
+
 
                 if self._shuttle is not env_output:
                     # ad-hoc update shuttle
