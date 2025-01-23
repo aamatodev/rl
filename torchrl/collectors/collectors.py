@@ -1210,12 +1210,12 @@ class SyncDataCollector(DataCollectorBase):
                 # compute intrinsic reward from s_t to s_t+1
                 next_policy_output = self.policy.module[0](env_output["next"])
 
-                i_reward = intrinsic_reward(env_output["agents"]["current_merged_rep_encoding"],
-                                                    next_policy_output["agents"]["current_merged_rep_encoding"],
-                                                    env_output["agents"]["objective_merged_rep_encoding"])
+                # i_reward = intrinsic_reward(env_output["agents"]["current_merged_rep_encoding"],
+                #                                     next_policy_output["agents"]["current_merged_rep_encoding"],
+                #                                     env_output["agents"]["objective_merged_rep_encoding"])
 
-                env_output["next"]["agents"]["episode_reward"] += 100 * i_reward
-                env_next_output["agents"]["episode_reward"] += 100 * i_reward
+                # env_output["next"]["agents"]["episode_reward"] += 100 * i_reward
+                # env_next_output["agents"]["episode_reward"] += 100 * i_reward
 
 
                 if self._shuttle is not env_output:

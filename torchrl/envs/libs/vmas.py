@@ -575,7 +575,7 @@ class VmasWrapper(_EnvWrapper):
         # h1 = tensordict["agents"]["current_enc"]
         # h2 = tensordict["agents"]["target_enc"]
 
-        # crew = tensordict["agents"]["i_rew"]
+        crew = tensordict["agents"]["c_rew"]
         # pos_emb = tensordict["agents"]["positive_embedding"][:, 1, :]
 
         # Normalize the tensors along the last dimension
@@ -600,14 +600,14 @@ class VmasWrapper(_EnvWrapper):
                 i = self.agent_names_to_indices_map[agent_name]
 
                 agent_obs = self.read_obs(obs[i])
-                agent_rew = self.read_reward(rews[i])
+                agent_rew = self.read_reward(rews[i]) + crew[:, i, :]
                 agent_info = self.read_info(infos[i])
 
                 agent_td = TensorDict(
                     source={
                         "observation": agent_obs,
                         "reward": agent_rew,
-                        # "c_reward": crew[:, i, :],
+                        "c_reward": crew[:, i, :],
                     },
                     batch_size=self.batch_size,
                     device=self.device,
