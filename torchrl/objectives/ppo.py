@@ -914,6 +914,9 @@ class ClipPPOLoss(PPOLoss):
             else value,
             batch_size=[],
         )
+
+        td_out.set("distance", tensordict["agents"]["distance"].mean())
+
         return td_out
 
 
@@ -1189,6 +1192,7 @@ class KLPENPPOLoss(PPOLoss):
             {
                 "loss_objective": -neg_loss,
                 "kl": kl.detach(),
+                "distance": tensordict["agents"]["distance"].mean()
             },
             batch_size=[],
         )
