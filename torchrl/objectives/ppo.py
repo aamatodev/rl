@@ -915,8 +915,6 @@ class ClipPPOLoss(PPOLoss):
             batch_size=[],
         )
 
-        td_out.set("distance", tensordict["agents"]["distance"].mean())
-
         return td_out
 
 
