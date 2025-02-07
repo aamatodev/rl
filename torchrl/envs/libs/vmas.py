@@ -36,11 +36,10 @@ from torchrl.envs.utils import (
 from torch import nn
 import torch.nn.functional as F
 
-
 _has_vmas = importlib.util.find_spec("vmas") is not None
 
-
 __all__ = ["VmasWrapper", "VmasEnv"]
+
 
 def _get_envs():
     if not _has_vmas:
@@ -54,9 +53,9 @@ def _get_envs():
 
 @set_gym_backend("gym")
 def _vmas_to_torchrl_spec_transform(
-    spec,
-    device,
-    categorical_action_encoding,
+        spec,
+        device,
+        categorical_action_encoding,
 ) -> TensorSpec:
     gym_spaces = gym_backend("spaces")
     if isinstance(spec, gym_spaces.discrete.Discrete):
@@ -238,11 +237,11 @@ class VmasWrapper(_EnvWrapper):
         return list(_get_envs())
 
     def __init__(
-        self,
-        env: "vmas.simulator.environment.environment.Environment" = None,  # noqa
-        categorical_actions: bool = True,
-        group_map: MarlGroupMapType | Dict[str, List[str]] | None = None,
-        **kwargs,
+            self,
+            env: "vmas.simulator.environment.environment.Environment" = None,  # noqa
+            categorical_actions: bool = True,
+            group_map: MarlGroupMapType | Dict[str, List[str]] | None = None,
+            **kwargs,
     ):
         if env is not None:
             kwargs["env"] = env
@@ -254,10 +253,10 @@ class VmasWrapper(_EnvWrapper):
         super().__init__(**kwargs, allow_done_after_reset=True)
 
     def _build_env(
-        self,
-        env: "vmas.simulator.environment.environment.Environment",  # noqa
-        from_pixels: bool = False,
-        pixels_only: bool = False,
+            self,
+            env: "vmas.simulator.environment.environment.Environment",  # noqa
+            from_pixels: bool = False,
+            pixels_only: bool = False,
     ):
         self.from_pixels = from_pixels
         self.pixels_only = pixels_only
@@ -318,7 +317,7 @@ class VmasWrapper(_EnvWrapper):
         return group_map
 
     def _make_specs(
-        self, env: "vmas.simulator.environment.environment.Environment"  # noqa
+            self, env: "vmas.simulator.environment.environment.Environment"  # noqa
     ) -> None:
         # Create and check group map
         self.agent_names = [agent.name for agent in self.agents]
@@ -498,7 +497,7 @@ class VmasWrapper(_EnvWrapper):
         self._env.seed(seed)
 
     def _reset(
-        self, tensordict: Optional[TensorDictBase] = None, **kwargs
+            self, tensordict: Optional[TensorDictBase] = None, **kwargs
     ) -> TensorDictBase:
         if tensordict is not None and "_reset" in tensordict.keys():
             _reset = tensordict.get("_reset")
@@ -552,8 +551,8 @@ class VmasWrapper(_EnvWrapper):
         return tensordict_out
 
     def _step(
-        self,
-        tensordict: TensorDictBase,
+            self,
+            tensordict: TensorDictBase,
     ) -> TensorDictBase:
         agent_indices = {}
         action_list = []
@@ -575,7 +574,7 @@ class VmasWrapper(_EnvWrapper):
         # h1 = tensordict["agents"]["current_enc"]
         # h2 = tensordict["agents"]["target_enc"]
 
-        # c_rew = tensordict["agents"]["distance"]
+        c_rew = tensordict["agents"]["distance"]
         # pos_emb = tensordict["agents"]["positive_embedding"][:, 1, :]
 
         # Normalize the tensors along the last dimension
@@ -600,7 +599,7 @@ class VmasWrapper(_EnvWrapper):
                 i = self.agent_names_to_indices_map[agent_name]
 
                 agent_obs = self.read_obs(obs[i])
-                agent_rew = self.read_reward(rews[i])
+                agent_rew = self.read_reward(rews[i]) + c_rew[:, i, :]
                 # agent_rew = c_rew[:, i, :]
                 agent_info = self.read_info(infos[i])
 
@@ -630,7 +629,7 @@ class VmasWrapper(_EnvWrapper):
         return tensordict_out
 
     def read_obs(
-        self, observations: Union[Dict, torch.Tensor]
+            self, observations: Union[Dict, torch.Tensor]
     ) -> Union[Dict, torch.Tensor]:
         if isinstance(observations, torch.Tensor):
             return _selective_unsqueeze(observations, batch_size=self.batch_size)
@@ -798,16 +797,16 @@ class VmasEnv(VmasWrapper):
     """
 
     def __init__(
-        self,
-        scenario: Union[str, "vmas.simulator.scenario.BaseScenario"],  # noqa
-        *,
-        num_envs: int,
-        continuous_actions: bool = True,
-        max_steps: Optional[int] = None,
-        categorical_actions: bool = True,
-        seed: Optional[int] = None,
-        group_map: MarlGroupMapType | Dict[str, List[str]] | None = None,
-        **kwargs,
+            self,
+            scenario: Union[str, "vmas.simulator.scenario.BaseScenario"],  # noqa
+            *,
+            num_envs: int,
+            continuous_actions: bool = True,
+            max_steps: Optional[int] = None,
+            categorical_actions: bool = True,
+            seed: Optional[int] = None,
+            group_map: MarlGroupMapType | Dict[str, List[str]] | None = None,
+            **kwargs,
     ):
         if not _has_vmas:
             raise ImportError(
@@ -832,13 +831,13 @@ class VmasEnv(VmasWrapper):
             raise TypeError("Could not find environment key 'num_envs' in kwargs.")
 
     def _build_env(
-        self,
-        scenario: Union[str, "vmas.simulator.scenario.BaseScenario"],  # noqa
-        num_envs: int,
-        continuous_actions: bool,
-        max_steps: Optional[int],
-        seed: Optional[int],
-        **scenario_kwargs,
+            self,
+            scenario: Union[str, "vmas.simulator.scenario.BaseScenario"],  # noqa
+            num_envs: int,
+            continuous_actions: bool,
+            max_steps: Optional[int],
+            seed: Optional[int],
+            **scenario_kwargs,
     ) -> "vmas.simulator.environment.environment.Environment":  # noqa
         vmas = self.lib
 
