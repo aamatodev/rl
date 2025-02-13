@@ -570,29 +570,15 @@ class VmasWrapper(_EnvWrapper):
             action_list += group_action_list
         action = [action_list[agent_indices[i]] for i in range(self.n_agents)]
 
-        # similarity = tensordict["agents"]["similarity"]
-        # h1 = tensordict["agents"]["current_enc"]
-        # h2 = tensordict["agents"]["target_enc"]
-
-        c_rew = tensordict["agents"]["distance"]
-        # pos_emb = tensordict["agents"]["positive_embedding"][:, 1, :]
-
-        # Normalize the tensors along the last dimension
-        # tensor1_norm = F.normalize(current_emb, dim=0)  # Shape [60, 4, 32]
-        # tensor2_norm = F.normalize(pos_emb, dim=0)  # Shape [60, 4, 32]
-
-        # Compute cosine similarity: [60, 4, 32] x [60, 4, 32] -> [60, 4, 32, 32]
-        # cosine_similarity = torch.matmul(tensor1_norm, tensor2_norm.T)
-
-        # Get the maximum cosine similarity along the last dimension
-        # max_cosine_similarity, _ = cosine_similarity.max(dim=1)  # Shape [60, 4, 1]
-        # max_cosine_similarity = max_cosine_similarity.unsqueeze(1).unsqueeze(1).repeat(1, 4, 1)
-
         obs, rews, dones, infos = self._env.step(action)
-
         dones = self.read_done(dones)
-
         source = {"done": dones, "terminated": dones.clone()}
+
+        if "distance" in tensordict["agents"].sorted_keys:
+            c_rew = tensordict["agents"]["distance"]
+        else:
+            c_rew = torch.zeros((self.batch_size[0], self.n_agents, 1), device=self.device)
+
         for group, agent_names in self.group_map.items():
             agent_tds = []
             for agent_name in agent_names:
