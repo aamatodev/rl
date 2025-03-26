@@ -69,6 +69,15 @@ def _load_available_envs() -> Dict:
         warnings.warn(
             f"Butterfly environments failed to load with error message {err}."
         )
+
+    try:
+        from lbforaging.foraging.lbforaging import ForagingEnv
+        all_environments.update({"lbforaging": ForagingEnv})
+    except ModuleNotFoundError as err:
+        warnings.warn(
+            f"lbforaging failed to load with error message {err}."
+        )
+
     return all_environments
 
 
@@ -996,6 +1005,15 @@ class PettingZooEnv(PettingZooWrapper):
                 f"PettingZoo failed to load all modules with error message {err}, trying to load individual modules."
             )
             all_environments = _load_available_envs()
+
+        # Add custom environments
+        try:
+            from lbforaging.foraging import lbforaging
+            all_environments.update({"lbforaging": lbforaging})
+        except ModuleNotFoundError as err:
+            warnings.warn(
+                f"lbforaging failed to load with error message {err}."
+            )
 
         if task not in all_environments:
             # Try looking at the literal translation of values
