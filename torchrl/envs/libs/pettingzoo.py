@@ -634,13 +634,21 @@ class PettingZooWrapper(_EnvWrapper):
             group_truncated = tensordict_out.get((group, "truncated"))
             group_info = tensordict_out.get((group, "info"), None)
 
+            if "distance" in tensordict["player"].sorted_keys:
+                c_rew = tensordict["player"]["distance"]
+            else:
+                c_rew = torch.zeros(tensordict["player"]["distance"].shape, device=self.device)
+
+            if len(c_rew.shape) == 2:
+                c_rew = c_rew.unsqueeze(0)
+
             for index, agent in enumerate(agent_names):
                 if agent in observation_dict:  # Live agents
                     group_observation[index] = self.observation_spec[
                         group, "observation"
                     ][index].encode(observation_dict[agent])
                     group_reward[index] = torch.tensor(
-                        rewards_dict[agent],
+                        rewards_dict[agent] + c_rew[0, 0, 0],
                         device=self.device,
                         dtype=torch.float32,
                     )
