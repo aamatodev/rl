@@ -11,7 +11,7 @@ from typing import Dict, List, Tuple, Union
 
 import packaging
 import torch
-from tensordict import TensorDictBase
+from tensordict import TensorDictBase, TensorDict
 
 from torchrl.data.tensor_specs import Categorical, Composite, OneHot, Unbounded
 from torchrl.envs.common import _EnvWrapper
@@ -202,18 +202,18 @@ class PettingZooWrapper(_EnvWrapper):
         return list(_get_envs())
 
     def __init__(
-        self,
-        env: Union[
-            "pettingzoo.utils.env.ParallelEnv",  # noqa: F821
-            "pettingzoo.utils.env.AECEnv",  # noqa: F821
-        ] = None,
-        return_state: bool = False,
-        group_map: MarlGroupMapType | Dict[str, List[str]] | None = None,
-        use_mask: bool = False,
-        categorical_actions: bool = True,
-        seed: int | None = None,
-        done_on_any: bool | None = None,
-        **kwargs,
+            self,
+            env: Union[
+                "pettingzoo.utils.env.ParallelEnv",  # noqa: F821
+                "pettingzoo.utils.env.AECEnv",  # noqa: F821
+            ] = None,
+            return_state: bool = False,
+            group_map: MarlGroupMapType | Dict[str, List[str]] | None = None,
+            use_mask: bool = False,
+            categorical_actions: bool = True,
+            seed: int | None = None,
+            done_on_any: bool | None = None,
+            **kwargs,
     ):
         if env is not None:
             kwargs["env"] = env
@@ -267,11 +267,11 @@ class PettingZooWrapper(_EnvWrapper):
         return pettingzoo
 
     def _build_env(
-        self,
-        env: Union[
-            "pettingzoo.utils.env.ParallelEnv",  # noqa: F821
-            "pettingzoo.utils.env.AECEnv",  # noqa: F821
-        ],
+            self,
+            env: Union[
+                "pettingzoo.utils.env.ParallelEnv",  # noqa: F821
+                "pettingzoo.utils.env.AECEnv",  # noqa: F821
+            ],
     ):
         import pettingzoo
 
@@ -294,11 +294,11 @@ class PettingZooWrapper(_EnvWrapper):
 
     @set_gym_backend("gymnasium")
     def _make_specs(
-        self,
-        env: Union[
-            "pettingzoo.utils.env.ParallelEnv",  # noqa: F821
-            "pettingzoo.utils.env.AECEnv",  # noqa: F821
-        ],
+            self,
+            env: Union[
+                "pettingzoo.utils.env.ParallelEnv",  # noqa: F821
+                "pettingzoo.utils.env.AECEnv",  # noqa: F821
+            ],
     ) -> None:
         # Set default for done on any or all
         if self.done_on_any is None:
@@ -390,8 +390,8 @@ class PettingZooWrapper(_EnvWrapper):
         # We uniform this by removing it from both places and optionally set it in a standard location.
         group_observation_inner_spec = group_observation_spec["observation"]
         if (
-            isinstance(group_observation_inner_spec, Composite)
-            and "action_mask" in group_observation_inner_spec.keys()
+                isinstance(group_observation_inner_spec, Composite)
+                and "action_mask" in group_observation_inner_spec.keys()
         ):
             self.has_action_mask[group_name] = True
             del group_observation_inner_spec["action_mask"]
@@ -422,6 +422,7 @@ class PettingZooWrapper(_EnvWrapper):
             },
             shape=torch.Size((n_agents,)),
         )
+
         group_done_spec = Composite(
             {
                 "done": Categorical(
@@ -459,7 +460,7 @@ class PettingZooWrapper(_EnvWrapper):
             raise TypeError("Could not find environment key 'env' in kwargs.")
         env = kwargs["env"]
         if not isinstance(
-            env, (pettingzoo.utils.env.ParallelEnv, pettingzoo.utils.env.AECEnv)
+                env, (pettingzoo.utils.env.ParallelEnv, pettingzoo.utils.env.AECEnv)
         ):
             raise TypeError("env is not of type expected.")
 
@@ -539,7 +540,7 @@ class PettingZooWrapper(_EnvWrapper):
         self.reset(seed=self.seed)
 
     def _reset(
-        self, tensordict: TensorDictBase | None = None, **kwargs
+            self, tensordict: TensorDictBase | None = None, **kwargs
     ) -> TensorDictBase:
         if tensordict is not None:
             _reset = tensordict.get("_reset", None)
@@ -596,8 +597,8 @@ class PettingZooWrapper(_EnvWrapper):
         return self._env.reset(**kwargs)
 
     def _step(
-        self,
-        tensordict: TensorDictBase,
+            self,
+            tensordict: TensorDictBase,
     ) -> TensorDictBase:
         if self.parallel:
             (
@@ -625,6 +626,16 @@ class PettingZooWrapper(_EnvWrapper):
             tensordict_out, observation_dict, info_dict
         )
 
+        if "distance" in tensordict["player"].sorted_keys:
+            c_rew = tensordict["player"]["distance"].clone().detach()
+            for key, value in info_dict.items():
+                value["contrastive_reward"] = c_rew[0, 0].item()
+                value["vanilla_reward"] = rewards_dict["player_0"]
+
+        else:
+            c_rew = torch.zeros(tensordict["player"]["distance"].shape, device=self.device)
+
+
         # Now we get the data
         for group, agent_names in self.group_map.items():
             group_observation = tensordict_out.get((group, "observation"))
@@ -632,12 +643,7 @@ class PettingZooWrapper(_EnvWrapper):
             group_done = tensordict_out.get((group, "done"))
             group_terminated = tensordict_out.get((group, "terminated"))
             group_truncated = tensordict_out.get((group, "truncated"))
-            group_info = tensordict_out.get((group, "info"), None)
-
-            if "distance" in tensordict["player"].sorted_keys:
-                c_rew = tensordict["player"]["distance"]
-            else:
-                c_rew = torch.zeros(tensordict["player"]["distance"].shape, device=self.device)
+            group_info = tensordict_out.get((group, "info"), info_dict["player_0"])
 
             if len(c_rew.shape) == 2:
                 c_rew = c_rew.unsqueeze(0)
@@ -648,7 +654,7 @@ class PettingZooWrapper(_EnvWrapper):
                         group, "observation"
                     ][index].encode(observation_dict[agent])
                     group_reward[index] = torch.tensor(
-                        rewards_dict[agent] + c_rew[0, 0, 0],
+                        rewards_dict[agent] + c_rew[0, index, 0],
                         device=self.device,
                         dtype=torch.float32,
                     )
@@ -742,8 +748,8 @@ class PettingZooWrapper(_EnvWrapper):
         )
 
     def _step_parallel(
-        self,
-        tensordict: TensorDictBase,
+            self,
+            tensordict: TensorDictBase,
     ) -> Tuple[Dict, Dict, Dict, Dict, Dict]:
         action_dict = {}
         for group, agents in self.group_map.items():
@@ -757,8 +763,8 @@ class PettingZooWrapper(_EnvWrapper):
         return self._env.step(action_dict)
 
     def _step_aec(
-        self,
-        tensordict: TensorDictBase,
+            self,
+            tensordict: TensorDictBase,
     ) -> Tuple[Dict, Dict, Dict, Dict, Dict]:
         for group, agents in self.group_map.items():
             if self.agent_selection in agents:
@@ -962,16 +968,16 @@ class PettingZooEnv(PettingZooWrapper):
     """
 
     def __init__(
-        self,
-        task: str,
-        parallel: bool,
-        return_state: bool = False,
-        group_map: MarlGroupMapType | Dict[str, List[str]] | None = None,
-        use_mask: bool = False,
-        categorical_actions: bool = True,
-        seed: int | None = None,
-        done_on_any: bool | None = None,
-        **kwargs,
+            self,
+            task: str,
+            parallel: bool,
+            return_state: bool = False,
+            group_map: MarlGroupMapType | Dict[str, List[str]] | None = None,
+            use_mask: bool = False,
+            categorical_actions: bool = True,
+            seed: int | None = None,
+            done_on_any: bool | None = None,
+            **kwargs,
     ):
         if not _has_pettingzoo:
             raise ImportError(
@@ -996,10 +1002,10 @@ class PettingZooEnv(PettingZooWrapper):
             raise TypeError("Could not find environment key 'parallel' in kwargs.")
 
     def _build_env(
-        self,
-        task: str,
-        parallel: bool,
-        **kwargs,
+            self,
+            task: str,
+            parallel: bool,
+            **kwargs,
     ) -> Union[
         "pettingzoo.utils.env.ParallelEnv",  # noqa: F821
         "pettingzoo.utils.env.AECEnv",  # noqa: F821

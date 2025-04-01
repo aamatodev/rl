@@ -576,6 +576,9 @@ class VmasWrapper(_EnvWrapper):
 
         if "distance" in tensordict["agents"].sorted_keys:
             c_rew = tensordict["agents"]["distance"]
+            for idx, value in enumerate(infos):
+                value["contrastive_reward"] = c_rew[:, idx, 0]
+                value["vanilla_reward"] = rews[idx]
         else:
             c_rew = torch.zeros((self.batch_size[0], self.n_agents, 1), device=self.device)
 
@@ -586,6 +589,7 @@ class VmasWrapper(_EnvWrapper):
 
                 agent_obs = self.read_obs(obs[i])
                 agent_rew = self.read_reward(rews[i]) + c_rew[:, i, :]
+                # agent_rew = self.read_reward(rews[i])
                 # agent_rew = c_rew[:, i, :]
                 agent_info = self.read_info(infos[i])
 
