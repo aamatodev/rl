@@ -574,17 +574,18 @@ class VmasWrapper(_EnvWrapper):
         dones = self.read_done(dones)
         source = {"done": dones, "terminated": dones.clone()}
 
-        if "agents" in tensordict.keys():
-            if "distance" in tensordict["agents"].sorted_keys:
-                c_rew = tensordict["agents"]["distance"]
-                for idx, value in enumerate(infos):
-                    value["contrastive_reward"] = c_rew[:, idx, 0]
-            else:
-                c_rew = torch.zeros((self.batch_size[0], self.n_agents, 1), device=self.device)
-                for idx, value in enumerate(infos):
-                    value["vanilla_reward"] = rews[idx]
+        if "distance" in tensordict[list(self.group_map.keys())[0]].sorted_keys:
+            c_rew = torch.zeros((self.batch_size[0], self.n_agents, 1), device=self.device)
+            prev = 0
+            for key, value in self.group_map.items():
+                c_rew[:, prev:len(value) + prev, :] = tensordict[key]["distance"]
+                prev = len(value) + prev
+            for idx, value in enumerate(infos):
+                value["contrastive_reward"] = c_rew[:, idx, 0]
         else:
             c_rew = torch.zeros((self.batch_size[0], self.n_agents, 1), device=self.device)
+            for idx, value in enumerate(infos):
+                value["vanilla_reward"] = rews[idx]
 
         for idx, value in enumerate(infos):
             value["vanilla_reward"] = rews[idx]
