@@ -78,6 +78,15 @@ def _load_available_envs() -> Dict:
             f"lbforaging failed to load with error message {err}."
         )
 
+    try:
+        from lb.env import parallel_env
+        all_environments.update({"load_balancing": parallel_env})
+    except ModuleNotFoundError as err:
+        warnings.warn(
+            f"load_balancing failed to load with error message {err}."
+        )
+
+
     return all_environments
 
 
@@ -626,15 +635,16 @@ class PettingZooWrapper(_EnvWrapper):
             tensordict_out, observation_dict, info_dict
         )
 
-        if "distance" in tensordict["player"].sorted_keys:
-            c_rew = tensordict["player"]["distance"].clone().detach()
+        if "distance" in tensordict["agent"].sorted_keys:
+            c_rew = tensordict["agent"]["distance"].clone().detach()
             for key, value in info_dict.items():
                 value["contrastive_reward"] = c_rew[0, 0].item()
                 value["vanilla_reward"] = rewards_dict["player_0"]
 
         else:
-            c_rew = torch.zeros(tensordict["player"]["distance"].shape, device=self.device)
-
+            c_rew = torch.zeros((self.n_agents, 1), device=self.device)
+            for idx, value in enumerate(info_dict):
+                info_dict[value]["vanilla_reward"] = rewards_dict[value]
 
         # Now we get the data
         for group, agent_names in self.group_map.items():
@@ -643,7 +653,7 @@ class PettingZooWrapper(_EnvWrapper):
             group_done = tensordict_out.get((group, "done"))
             group_terminated = tensordict_out.get((group, "terminated"))
             group_truncated = tensordict_out.get((group, "truncated"))
-            group_info = tensordict_out.get((group, "info"), info_dict["player_0"])
+            group_info = tensordict_out.get((group, "info"), info_dict["agent_0"])
 
             if len(c_rew.shape) == 2:
                 c_rew = c_rew.unsqueeze(0)
@@ -1027,6 +1037,15 @@ class PettingZooEnv(PettingZooWrapper):
         except ModuleNotFoundError as err:
             warnings.warn(
                 f"lbforaging failed to load with error message {err}."
+            )
+
+        # Add custom environments
+        try:
+            from lb import env
+            all_environments.update({"load_balancing": env})
+        except ModuleNotFoundError as err:
+            warnings.warn(
+                f"load_balancing failed to load with error message {err}."
             )
 
         if task not in all_environments:
