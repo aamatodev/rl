@@ -639,7 +639,7 @@ class PettingZooWrapper(_EnvWrapper):
             c_rew = tensordict["agent"]["distance"].clone().detach()
             for key, value in info_dict.items():
                 value["contrastive_reward"] = c_rew[0, 0].item()
-                value["vanilla_reward"] = rewards_dict["player_0"]
+                value["vanilla_reward"] = rewards_dict["agent_0"]
 
         else:
             c_rew = torch.zeros((self.n_agents, 1), device=self.device)
