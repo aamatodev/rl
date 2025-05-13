@@ -596,9 +596,9 @@ class VmasWrapper(_EnvWrapper):
                 i = self.agent_names_to_indices_map[agent_name]
 
                 agent_obs = self.read_obs(obs[i])
-                agent_rew = self.read_reward(rews[i]) + c_rew[:, i, :]
+                # agent_rew = self.read_reward(rews[i]) + c_rew[:, i, :]
                 # agent_rew = self.read_reward(rews[i])
-                # agent_rew = c_rew[:, i, :]
+                agent_rew = c_rew[:, i, :]
                 agent_info = self.read_info(infos[i])
 
                 agent_td = TensorDict(
