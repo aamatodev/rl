@@ -664,7 +664,8 @@ class PettingZooWrapper(_EnvWrapper):
                         group, "observation"
                     ][index].encode(observation_dict[agent])
                     group_reward[index] = torch.tensor(
-                        rewards_dict[agent] + c_rew[0, index, 0],
+                        rewards_dict[agent],
+                        # rewards_dict[agent] + c_rew[0, index, 0],
                         device=self.device,
                         dtype=torch.float32,
                     )
