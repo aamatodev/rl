@@ -285,6 +285,13 @@ class SMACv2Wrapper(_EnvWrapper):
                     device=self.device,
                     shape=(),
                 ),
+                "full_obs": Bounded(
+                            low=-1.0,
+                            high=1.0,
+                            shape=torch.Size([self.n_agents, self.get_obs_size()]),
+                            device=self.device,
+                            dtype=torch.float32,
+                        )
             }
         )
         mask_spec = Categorical(
@@ -332,12 +339,13 @@ class SMACv2Wrapper(_EnvWrapper):
         self, tensordict: Optional[TensorDictBase] = None, **kwargs
     ) -> TensorDictBase:
 
-        obs, state = self._env.reset()
+        obs, state, info = self._env.reset()
 
         # collect outputs
         obs = self._to_tensor(obs)
         state = self._to_tensor(state)
-        info = self.observation_spec["info"].zero()
+        info_u = self.observation_spec["info"].zero()
+        info_u.update(self.observation_spec["info"].encode(info))
 
         mask = self._update_action_mask()
 
@@ -346,7 +354,7 @@ class SMACv2Wrapper(_EnvWrapper):
             {"observation": obs, "action_mask": mask}, batch_size=(self.n_agents,)
         )
         tensordict_out = TensorDict(
-            source={"agents": agents_td, "state": state, "info": info},
+            source={"agents": agents_td, "state": state, "info": info_u},
             batch_size=(),
             device=self.device,
         )
